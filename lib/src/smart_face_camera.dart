@@ -131,10 +131,30 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
                       child: SizedBox(
                         width: size.width,
                         height: size.width * cameraController.value.aspectRatio,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: <Widget>[
-                            _cameraDisplayWidget(value),
+                        child: Stack(fit: StackFit.expand, children: <Widget>[
+                          _cameraDisplayWidget(value),
+                          if (widget.messageBuilder != null) ...[
+                            Positioned(
+                              top: 10,
+                              left: 80,
+                              right: 80,
+                              child: widget.messageBuilder!
+                                  .call(context, value.detectedFace),
+                            ),
+                          ],
+                          if (widget.message != null) ...[
+                            Positioned(
+                              top: 10,
+                              left: 80,
+                              right: 80,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 55, vertical: 15),
+                                child: Text(widget.message!,
+                                    textAlign: TextAlign.center,
+                                    style: widget.messageStyle),
+                              ),
+                            ),
                             if (value.detectedFace != null &&
                                 widget.indicatorShape !=
                                     IndicatorShape.none) ...[
@@ -168,7 +188,7 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
                                       ))
                             ]
                           ],
-                        ),
+                        ]),
                       ),
                     ),
                   ),
@@ -197,9 +217,9 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
                         _flashControlWidget(value)
                       ],
                       if (widget.showCaptureControl) ...[
-                        const SizedBox(width: 15),
+                        // const SizedBox(width: 15),
                         _captureControlWidget(value),
-                        const SizedBox(width: 15)
+                        // const SizedBox(width: 15)
                       ],
                       if (widget.showCameraLensControl) ...[
                         _lensControlWidget()
@@ -220,16 +240,16 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
     final CameraController? cameraController = value.cameraController;
     if (cameraController != null && cameraController.value.isInitialized) {
       return CameraPreview(cameraController, child: Builder(builder: (context) {
-        if (widget.messageBuilder != null) {
-          return widget.messageBuilder!.call(context, value.detectedFace);
-        }
-        if (widget.message != null) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 55, vertical: 15),
-            child: Text(widget.message!,
-                textAlign: TextAlign.center, style: widget.messageStyle),
-          );
-        }
+        // if (widget.messageBuilder != null) {
+        //   return widget.messageBuilder!.call(context, value.detectedFace);
+        // }
+        // if (widget.message != null) {
+        //   return Padding(
+        //     padding: const EdgeInsets.symmetric(horizontal: 55, vertical: 15),
+        //     child: Text(widget.message!,
+        //         textAlign: TextAlign.center, style: widget.messageStyle),
+        //   );
+        // }
         return const SizedBox.shrink();
       }));
     }
@@ -247,8 +267,11 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
 
   /// Display the control buttons to take pictures.
   Widget _captureControlWidget(FaceCameraState value) {
-    return IconButton(
-      icon: widget.captureControlBuilder?.call(context, value.detectedFace) ??
+    return GestureDetector(
+      onTap: widget.controller.enableControls && !_disableCapture
+          ? widget.controller.captureImage
+          : null,
+      child: widget.captureControlBuilder?.call(context, value.detectedFace) ??
           CircleAvatar(
               radius: 35,
               foregroundColor:
@@ -259,9 +282,6 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
                 padding: EdgeInsets.all(8.0),
                 child: Icon(Icons.camera_alt, size: 35),
               )),
-      onPressed: widget.controller.enableControls && !_disableCapture
-          ? widget.controller.captureImage
-          : null,
     );
   }
 
@@ -275,8 +295,12 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
             ? Icons.flash_off
             : Icons.flash_auto;
 
-    return IconButton(
-      icon: widget.flashControlBuilder
+    return GestureDetector(
+      onTap: widget.controller.enableControls
+          ? () => widget.controller.changeFlashMode(
+              (currentFlashMode + 1) % availableFlashMode.length)
+          : null,
+      child: widget.flashControlBuilder
               ?.call(context, availableFlashMode[currentFlashMode]) ??
           CircleAvatar(
               radius: 25,
@@ -285,25 +309,22 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
                 padding: const EdgeInsets.all(2.0),
                 child: Icon(icon, size: 25),
               )),
-      onPressed: widget.controller.enableControls
-          ? widget.controller.changeFlashMode
-          : null,
     );
   }
 
   /// Display the control buttons to switch between camera lens.
   Widget _lensControlWidget() {
-    return IconButton(
-        icon: widget.lensControlIcon ??
+    return GestureDetector(
+        onTap: widget.controller.enableControls
+            ? widget.controller.changeCameraLens
+            : null,
+        child: widget.lensControlIcon ??
             CircleAvatar(
                 radius: 25,
                 foregroundColor: iconColor,
                 child: const Padding(
                   padding: EdgeInsets.all(2.0),
                   child: Icon(Icons.switch_camera_sharp, size: 25),
-                )),
-        onPressed: widget.controller.enableControls
-            ? widget.controller.changeCameraLens
-            : null);
+                )));
   }
 }
